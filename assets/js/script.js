@@ -1,5 +1,44 @@
 var main = document.getElementById("main");
 var bodyText = document.getElementById("body-text");
+var currentQuestionIndex = 0;
+var footer = document.getElementById("footer");
+
+var question1 = {
+  text: "Commonly used data types DO Not Include:",
+  options: ["1. strings", "2. booleans", "3. alerts", "4. numbers"],
+  correctAnswer: "3. alerts",
+};
+
+var question2 = {
+  text: "The condition in an if / else statement is enclosed with _______ .",
+  options: ["1. quotes", "2. curly brackets", "3. parenthesis", "4. square brackets"],
+  correctAnswer: "2. curly brackets",
+};
+
+var question3 = {
+  text: "Arrays in JavaScript can be used to store _____ .:",
+  options: [
+    "1. numbers and strings",
+    "2. other arrays",
+    "3. booleans",
+    "4. all of the above",
+  ],
+  correctAnswer: "4. all of the above",
+};
+
+var question4 = {
+  text: "String values must be enclosed within _____ when being assigned to variables.",
+  options: ["1. commas", "2. curly brackets", "3. quotes", "4. parenthesis"],
+  correctAnswer: "3. quotes",
+};
+
+var question5 = {
+  text: "A very useful tool used during development and debugging for printing content to the debugger is:",
+  options: ["1. JavaScript", "2. terminal/bash", "3. for loops", "4. console.log"],
+  correctAnswer: "4. console.log",
+};
+
+var questionBank = [question1, question2, question3, question4, question5];
 
 function createStartQuizPage() {
   bodyText.textContent = "Coding Quiz Challenge";
@@ -19,39 +58,7 @@ function createStartQuizPage() {
 
 createStartQuizPage();
 
-
-var question1 = {
-  text: "Commonly used data types DO Not Include:",
-  options: ["strings","booleans", "alerts", "numbers" ],
-  correctAnswer: "booleans"
-};
-
-var question2 = {
-  text: "The condition in an if / else statement is enclosed with _______ .",
-  options: ["quotes","curly brackets", "parenthesis", "square brackets" ],
-  correctAnswer: "curly brackets"
-};
-
-var question3 = {
-  text: "Arrays in JavaScript can be used to store _____ .:",
-  options: ["numbers and strings","other arrays", "booleans", "all of the above" ],
-  correctAnswer: "all of the above"
-};
-
-var question4 = {
-  text: "String values must be enclosed within _____ when being assigned to variables.",
-  options: ["commas","curly brackets", "quotes", "parenthesis"],
-  correctAnswer: "parenthesis"
-};
-
-var question5 = {
-  text: "A very useful tool used during development and debugging for printing content to the debugger is:",
-  options: ["JavaScript","terminal/bash", "for loops", "console.log" ],
-  correctAnswer: "console.log"
-};
-
-
-var questionBank = [question1, question2,question3,question4,question5];
+//Add remove function to go to quiz question
 
 function startQuiz() {
   var paraEl = document.querySelector("p");
@@ -59,57 +66,95 @@ function startQuiz() {
   var startQuizButton = document.querySelector("button");
   main.removeChild(startQuizButton);
 
-
-
-createQuestion(questionBank[0].text, questionBank[0].options);
-
-
+  var questionObject = questionBank[currentQuestionIndex];
+  createQuestion(questionObject.text, questionObject.options);
 }
 
-function createQuestion(question, options) {
-  var optionsEl = document.createElement("div");
+function createQuestion(questionText, options) {
+
+  bodyText.textContent = questionText;
+
+  var optionsDiv = document.createElement("div");
+  optionsDiv.setAttribute("id", "optionsDiv");
+
+  main.appendChild(optionsDiv);
+
   // Create ordered list element
-  var optionEl = document.createElement("ol");
-  // Create ordered list items
-  var li1 = document.createElement("li");
-  var li2 = document.createElement("li");
-  var li3 = document.createElement("li");
-  var li4 = document.createElement("li");
+  var optionsOrderedList = document.createElement("ol");
+  optionsDiv.appendChild(optionsOrderedList);
 
-  bodyText.textContent = question;
-  // Add text for list items
-  li1.textContent = options[0];
-  li2.textContent = options[1];
-  li3.textContent = options[2];
-  li4.textContent = options[3];
 
-  // main.appendChild(infoEl);
-  main.appendChild(optionsEl);
+  for (var i = 0; i < options.length; i++) {
+    var optionListItem = document.createElement("li");
+    optionListItem.setAttribute("style", "list-style-type: none;");
+    
+    var optionButton = document.createElement("button");
+    optionButton.textContent = options[i];
+    optionButton.addEventListener("click", nextQuestion);
 
-  // // Append ordered list
-  optionsEl.appendChild(optionEl);
-  // // Append list items to ordered list element
-  optionEl.appendChild(li1);
-  optionEl.appendChild(li2);
-  optionEl.appendChild(li3);
-  optionEl.appendChild(li4);
+    optionListItem.appendChild(optionButton);
+    optionsOrderedList.appendChild(optionListItem);
+  }
 }
 
-// ------------------------------------------------------
+function nextQuestion(event) {
+  // Check user's answer
+  var existingResultEl = document.getElementById("resultId");
+  if (!!existingResultEl) {
+    footer.removeChild(existingResultEl);
+  }
+  
+  
+  var result; 
+  if (event.target.textContent === questionBank[currentQuestionIndex].correctAnswer) {
+     result = "Correct!";
+   } else {
+     result = "Wrong!";
+  }
 
-// h1El.setAttribute("style", "margin:auto; width:50%; text-align:center;");
-// infoEl.setAttribute("style", "margin:auto; width:50%; text-align:center;");
-// imgEl.setAttribute("src", "http://placekitten.com/200/300");
-// nameEl.setAttribute("style", "font-size:25px; text-align:center;");
-// kittenEl.setAttribute("style", "font-size:25px; text-align:center;");
-// favoriteEl.setAttribute("style", "font-size:20px;");
-// // Add styling to list element
-// listEl.setAttribute("style", "background:#333333; padding:20px;");
+  var resultEl = document.createElement("p");
+  resultEl.setAttribute("id", "resultId");
+  resultEl.textContent = result;
+  footer.appendChild(resultEl);
+
+
+  if (currentQuestionIndex < questionBank.length - 1) {
+    var optionsDiv = document.getElementById("optionsDiv");
+    main.removeChild(optionsDiv);
+
+    var questionObject = questionBank[++currentQuestionIndex];
+    createQuestion(questionObject.text, questionObject.options);
+  } else {
+    console.log("no more questions");
+  }
+}
+
+// Add styling to list element
+
+// bodyText.setAttribute(
+//   "style",
+//   "margin:auto; width:50%; text-align:center;font-size:50px;"
+// );
+// optionEl.setAttribute("style", "margin:auto; width:50%; text-align:center;");
+// optionEl.setAttribute("style", "background:#333333; padding:20px;");
+
 // // Add styling to list items
-// li1.setAttribute("style", " color:white; background: #666666; padding: 5px; margin-left: 35px;");
-// li2.setAttribute("style", " color:white; background: #777777; padding: 5px; margin-left: 35px;");
-// li3.setAttribute("style", " color:white; background: #888888; padding: 5px; margin-left: 35px;");
-// li4.setAttribute("style", " color:white; background: #999999; padding: 5px; margin-left: 35px;");
+// li1.setAttribute(
+//   "style",
+//   " color:white; background: #666666; padding: 5px; margin-left: 35px;"
+// );
+// li2.setAttribute(
+//   "style",
+//   " color:white; background: #777777; padding: 5px; margin-left: 35px;"
+// );
+// li3.setAttribute(
+//   "style",
+//   " color:white; background: #888888; padding: 5px; margin-left: 35px;"
+// );
+// li4.setAttribute(
+//   "style",
+//   " color:white; background: #999999; padding: 5px; margin-left: 35px;"
+// );
 
 // -----------------------------------------
 
