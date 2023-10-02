@@ -1,11 +1,15 @@
+// Initialize global variables
 var main = document.getElementById("main");
 var bodyText = document.getElementById("body-text");
 var currentQuestionIndex = 0;
 var footer = document.getElementById("footer");
 var currentPage;
-var highScores = [];
+var highScoreArray = [];
+var timerElement = document.querySelector("#timer-count");
+var timer;
+var timerCount;
 
-
+// Create question bank ----------------------------------
 var question1 = {
   text: "Commonly used data types DO Not Include:",
   options: ["1. strings", "2. booleans", "3. alerts", "4. numbers"],
@@ -24,7 +28,7 @@ var question2 = {
 };
 
 var question3 = {
-  text: "Arrays in JavaScript can be used to store _____ .:",
+  text: "Arrays in JavaScript can be used to store _____ .",
   options: [
     "1. numbers and strings",
     "2. other arrays",
@@ -51,11 +55,35 @@ var question5 = {
   correctAnswer: "4. console.log",
 };
 
-var questionBank = [question1, question2, question3, question4, question5];
+var question6 = {
+  text: "Which of the following keywords is used to define a variable in Javascript?",
+  options: ["1. var", "2. let", "3. function", "4. all of the above"],
+  correctAnswer: "1. var",
+};
 
-// ----------------------------------
+var question7 = {
+  text: "How can a datatype be declared to be a constant type?",
+  options: ["1. const", "2. var", "3. let", "4. constant"],
+  correctAnswer: "1. const",
+};
+
+var questionBank = [question1, question2, question3, question4, question5, question6, question7];
+// -------------------------------------------------------------------
+
+
+function init() {
+  timerElement.textContent = 0;
+  currentQuestionIndex = 0;
+  timerCount = 75;
+
+  // Get high scores from the local storage
+  highScoreArray = JSON.parse(localStorage.getItem("highScores"));
+}
 
 function createStartQuizPage() {
+  init();
+
+  // Keep current page reference for View High Scores function
   currentPage = "Start Quiz Page";
   bodyText.textContent = "Coding Quiz Challenge";
 
@@ -70,7 +98,7 @@ function createStartQuizPage() {
   startQuizButton.textContent = "Start Quiz";
   main.appendChild(startQuizButton);
 
-  // Attaches event listener to start quiz button
+  // Attach event listener to start quiz button
   startQuizButton.addEventListener("click", startQuizEvent);
 }
 
@@ -100,6 +128,7 @@ function createQuestionPage(questionText, options) {
     optionListItem.setAttribute("style", "list-style-type: none;");
 
     var optionButton = document.createElement("button");
+    optionButton.setAttribute("class", "option-button");
     optionButton.textContent = options[i];
     optionButton.addEventListener("click", nextQuestionEvent);
 
@@ -128,14 +157,15 @@ function createFinalScorePage() {
   main.appendChild(finalScoreEl);
 
   var labelInputEl = document.createElement("p");
-  labelInputEl.setAttribute("id", "label-input")
+  labelInputEl.setAttribute("id", "label-input");
   main.appendChild(labelInputEl);
 
   var labelEl = document.createElement("label");
-  labelEl.textContent = "Enter initials :";
+  labelEl.textContent = "Enter initials :  ";
   labelInputEl.appendChild(labelEl);
 
   var inputScoreEl = document.createElement("input");
+  inputScoreEl.setAttribute("style", "line-height: 28px;");
   labelInputEl.appendChild(inputScoreEl);
 
   var submitScoreButton = document.createElement("button");
@@ -143,18 +173,8 @@ function createFinalScorePage() {
   submitScoreButton.textContent = "Submit";
   main.appendChild(submitScoreButton);
 
-  // Attaches event listener to submit button
+  // Attach event listener to submit button
   submitScoreButton.addEventListener("click", submitScoreEvent);
-}
-
-function submitScoreEvent() {
-  var inputScoreEl = document.createElement("input");
-  var highScoreText = inputScoreEl[0].value + " - " + timerCount;
-
-  highScores.push(highScoreText);
-
-  removeFinalScorePage();
-  createHighScorePage();
 }
 
 function removeFinalScorePage() {
@@ -166,6 +186,8 @@ function removeFinalScorePage() {
 
   var submitScoreButton = document.getElementById("submit-score-button");
   main.removeChild(submitScoreButton);
+
+  removeResultElement();
 }
 
 function createHighScorePage() {
@@ -174,7 +196,7 @@ function createHighScorePage() {
   bodyText.textContent = "High Scores";
 
   var highScoreInputEl = document.createElement("p");
-  highScoreInputEl.setAttribute("id", "high-score")
+  highScoreInputEl.setAttribute("id", "high-score");
   main.appendChild(highScoreInputEl);
 
   var highScoreDiv = document.createElement("div");
@@ -184,11 +206,17 @@ function createHighScorePage() {
   var highScoreOrderedList = document.createElement("ol");
   highScoreDiv.appendChild(highScoreOrderedList);
 
-  
-  for (var i = 0; i < highScores.length; i++) {
-    var highScoreListItem = document.createElement("li");
-    highScoreListItem.textContent = highScores[i];
-    highScoreOrderedList.appendChild(highScoreListItem);
+  // Get high scores from the local storage
+  highScoreArray = JSON.parse(localStorage.getItem("highScores"));
+
+  // Create list items if high score array has values
+  if (!!highScoreArray) {
+    for (var i = 0; i < highScoreArray.length; i++) {
+      var highScoreListItem = document.createElement("li");
+      highScoreListItem.setAttribute("class", "high-score-item");
+      highScoreListItem.textContent = highScoreArray[i].initials + "-" + highScoreArray[i].timerCountValue;
+      highScoreOrderedList.appendChild(highScoreListItem);
+    }
   }
 
   var goBackButton = document.createElement("button");
@@ -198,25 +226,34 @@ function createHighScorePage() {
 
   goBackButton.addEventListener("click", goBackEvent);
 
-
   var clearHighScoreButton = document.createElement("button");
   clearHighScoreButton.setAttribute("id", "clear-scores-button");
   clearHighScoreButton.textContent = "Clear High Scores";
+
+  if (!highScoreArray || highScoreArray.length == 0) {
+    clearHighScoreButton.setAttribute("disabled", "true");
+  }
+  
   main.appendChild(clearHighScoreButton);
 
-
-  // // Attaches event listener to submit button
+  // Attach event listener to clear high score button
   clearHighScoreButton.addEventListener("click", clearHighScoreEvent);
 }
-
+ 
 function clearHighScoreEvent() {
-  console.log("clearHighScorePage");
+  var clearHighScoreButton = document.getElementById("clear-scores-button");
+  clearHighScoreButton.setAttribute("disabled", "true");
+
+  var highScoreDiv = document.getElementById("highScoreDiv");
+  var highScoreOrderedList = document.querySelector("ol");
+  highScoreDiv.removeChild(highScoreOrderedList);
+  
+  localStorage.removeItem("highScores");
 }
 
 function goBackEvent() {
   removeHighScorePage();
   createStartQuizPage();
-
 }
 
 function removeHighScorePage() {
@@ -233,8 +270,6 @@ function removeHighScorePage() {
   main.removeChild(clearHighScoreButton);
 }
 
-
-
 function startQuizEvent() {
   removeStartQuizPage();
 
@@ -244,57 +279,74 @@ function startQuizEvent() {
   startTimer();
 }
 
-function nextQuestionEvent(event) {
-  // Check user's answer
-  removeQuestionPage();
-
+function createResultElement() {
   var result;
-  if (
-    event.target.textContent ===
-    questionBank[currentQuestionIndex].correctAnswer
-  ) {
+
+  if (event.target.textContent === questionBank[currentQuestionIndex].correctAnswer) {
     result = "Correct!";
   } else {
     result = "Wrong!";
-    penaltyTime();
+    penaltyTime(); // Decrease timer by 10 seconds for wrong answer
   }
 
   var resultEl = document.createElement("p");
   resultEl.setAttribute("id", "resultId");
   resultEl.textContent = result;
   footer.appendChild(resultEl);
+}
+
+function removeResultElement() {
+  var resultEl = document.getElementById("resultId");
+  footer.removeChild(resultEl);
+}
+
+function nextQuestionEvent(event) {
+  removeQuestionPage();
+  
+  createResultElement();
 
   if (currentQuestionIndex < questionBank.length - 1) {
     var questionObject = questionBank[++currentQuestionIndex];
     createQuestionPage(questionObject.text, questionObject.options);
   } else {
+    var resultEl = document.getElementById("timer-count");
+    resultEl.textContent = timerCount;
     clearInterval(timer);
     createFinalScorePage();
   }
 }
 
-var timerElement = document.querySelector("#timer-count");
-var timer;
-var timerCount = 75;
+function submitScoreEvent() {
+  var inputScoreEl = document.querySelector("input");
+
+  var highscoreObject = {
+    initials: inputScoreEl.value,
+    timerCountValue: timerCount
+  };
+
+  if (!highScoreArray) {
+    highScoreArray = [];
+  }
+  highScoreArray.push(highscoreObject);
+
+  localStorage.setItem("highScores", JSON.stringify(highScoreArray));
+
+  removeFinalScorePage();
+  createHighScorePage();
+}
 
 function startTimer() {
   // Sets timer
   timer = setInterval(function () {
     timerCount--;
     timerElement.textContent = timerCount;
-    // if (timerCount >= 0) {
-    //   // Tests if win condition is met
-    //   if (isWin && timerCount > 0) {
-    //     // Clears interval and stops timer
-    //     clearInterval(timer);
-    //     winGame();
-    //   }
-    // }
-    // Tests if time has run out
+
     if (timerCount === 0) {
       // Clears interval
       clearInterval(timer);
-      // loseGame();
+      // Remove question page and go to final score page
+      removeQuestionPage();
+      createFinalScorePage();
     }
   }, 1000);
 }
@@ -303,7 +355,7 @@ function penaltyTime() {
   timerCount = timerCount - 10;
 }
 
-function viewHighScores() {
+function viewHighScoresEvent() {
   if (currentPage === "Start Quiz Page") {
     removeStartQuizPage();
   } else if (currentPage === "Question Page") {
@@ -312,213 +364,13 @@ function viewHighScores() {
     removeFinalScorePage();
   }
 
-  createHighScorePage();
+  if (currentPage !== "High Score Page") {
+    createHighScorePage();
+  }
+
+  clearInterval(timer);
 }
+
 //Starting point
 createStartQuizPage();
 
-//TODO Notes
-// use localStorage to store the highscore
-
-// Add styling to list element
-
-// bodyText.setAttribute(
-//   "style",
-//   "margin:auto; width:50%; text-align:center;font-size:50px;"
-// );
-// optionEl.setAttribute("style", "margin:auto; width:50%; text-align:center;");
-// optionEl.setAttribute("style", "background:#333333; padding:20px;");
-
-// // Add styling to list items
-// li1.setAttribute(
-//   "style",
-//   " color:white; background: #666666; padding: 5px; margin-left: 35px;"
-// );
-// li2.setAttribute(
-//   "style",
-//   " color:white; background: #777777; padding: 5px; margin-left: 35px;"
-// );
-// li3.setAttribute(
-//   "style",
-//   " color:white; background: #888888; padding: 5px; margin-left: 35px;"
-// );
-// li4.setAttribute(
-//   "style",
-//   " color:white; background: #999999; padding: 5px; margin-left: 35px;"
-// );
-
-// -----------------------------------------
-
-// var wordBlank = document.querySelector(".word-blanks");
-// var win = document.querySelector(".win");
-// var lose = document.querySelector(".lose");
-// var timerElement = document.querySelector(".timer-count");
-// var startButton = document.querySelector(".start-button");
-
-// var chosenWord = "";
-// var numBlanks = 0;
-// var winCounter = 0;
-// var loseCounter = 0;
-// var isWin = false;
-// var timer;
-// var timerCount;
-
-// // Arrays used to create blanks and letters on screen
-// var lettersInChosenWord = [];
-// var blanksLetters = [];
-
-// // Array of words the user will guess
-// var words = ["variable","array", "modulus", "object", "function", "string", "boolean"];
-
-// // The init function is called when the page loads
-// function init() {
-//   getWins();
-//   getlosses();
-// }
-
-// // The startGame function is called when the start button is clicked
-// function startGame() {
-//   isWin = false;
-//   timerCount = 10;
-//   // Prevents start button from being clicked when round is in progress
-//   startButton.disabled = true;
-//   renderBlanks()
-//   startTimer()
-// }
-
-// // The setTimer function starts and stops the timer and triggers winGame() and loseGame()
-// function startTimer() {
-//   // Sets timer
-//   timer = setInterval(function() {
-//     timerCount--;
-//     timerElement.textContent = timerCount;
-//     if (timerCount >= 0) {
-//       // Tests if win condition is met
-//       if (isWin && timerCount > 0) {
-//         // Clears interval and stops timer
-//         clearInterval(timer);
-//         winGame();
-//       }
-//     }
-//     // Tests if time has run out
-//     if (timerCount === 0) {
-//       // Clears interval
-//       clearInterval(timer);
-//       loseGame();
-//     }
-//   }, 1000);
-// }
-
-// // Creates blanks on screen
-// function renderBlanks() {
-//   // Randomly picks word from words array
-//   chosenWord = words[Math.floor(Math.random() * words.length)];
-//   lettersInChosenWord = chosenWord.split("");
-//   numBlanks = lettersInChosenWord.length;
-//   blanksLetters = []
-//   // Uses loop to push blanks to blankLetters array
-//   for (var i = 0; i < numBlanks; i++) {
-//     blanksLetters.push("_");
-//   }
-//   // Converts blankLetters array into a string and renders it on the screen
-//   wordBlank.textContent = blanksLetters.join(" ")
-// }
-
-// // Updates win count on screen and sets win count to client storage
-// function setWins() {
-//   win.textContent = winCounter;
-//   localStorage.setItem("winCount", winCounter);
-// }
-
-// // Updates lose count on screen and sets lose count to client storage
-// function setLosses() {
-//   lose.textContent = loseCounter;
-//   localStorage.setItem("loseCount", loseCounter);
-// }
-
-// // These functions are used by init
-// function getWins() {
-//   // Get stored value from client storage, if it exists
-//   var storedWins = localStorage.getItem("winCount");
-//   // If stored value doesn't exist, set counter to 0
-//   if (storedWins === null) {
-//     winCounter = 0;
-//   } else {
-//     // If a value is retrieved from client storage set the winCounter to that value
-//     winCounter = storedWins;
-//   }
-//   //Render win count to page
-//   win.textContent = winCounter;
-// }
-
-// function getlosses() {
-//   var storedLosses = localStorage.getItem("loseCount");
-//   if (storedLosses === null) {
-//     loseCounter = 0;
-//   } else {
-//     loseCounter = storedLosses;
-//   }
-//   lose.textContent = loseCounter;
-// }
-
-// function checkWin() {
-//   // If the word equals the blankLetters array when converted to string, set isWin to true
-//   if (chosenWord === blanksLetters.join("")) {
-//     // This value is used in the timer function to test if win condition is met
-//     isWin = true;
-//   }
-// }
-
-// // Tests if guessed letter is in word and renders it to the screen.
-// function checkLetters(letter) {
-//   var letterInWord = false;
-//   for (var i = 0; i < numBlanks; i++) {
-//     if (chosenWord[i] === letter) {
-//       letterInWord = true;
-//     }
-//   }
-//   if (letterInWord) {
-//     for (var j = 0; j < numBlanks; j++) {
-//       if (chosenWord[j] === letter) {
-//         blanksLetters[j] = letter;
-//       }
-//     }
-//     wordBlank.textContent = blanksLetters.join(" ");
-//   }
-// }
-
-// // Attach event listener to document to listen for key event
-// document.addEventListener("keydown", function(event) {
-//   // If the count is zero, exit function
-//   if (timerCount === 0) {
-//     return;
-//   }
-//   // Convert all keys to lower case
-//   var key = event.key.toLowerCase();
-//   var alphabetNumericCharacters = "abcdefghijklmnopqrstuvwxyz0123456789 ".split("");
-//   // Test if key pushed is letter
-//   if (alphabetNumericCharacters.includes(key)) {
-//     var letterGuessed = event.key;
-//     checkLetters(letterGuessed)
-//     checkWin();
-//   }
-// });
-
-// // Attach event listener to start button to call startGame function on click
-// startButton.addEventListener("click", startGame);
-
-// // Calls init() so that it fires when page opened
-// init();
-
-// // Bonus: Add reset button
-// var resetButton = document.querySelector(".reset-button");
-
-// function resetGame() {
-//   // Resets win and loss counts
-//   winCounter = 0;
-//   loseCounter = 0;
-//   // Renders win and loss counts and sets them into client storage
-//   setWins()
-//   setLosses()
-// }
-// //
